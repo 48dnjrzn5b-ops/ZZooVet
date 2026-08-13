@@ -1,49 +1,28 @@
-// Імпортуємо Image для оптимізованого завантаження картинок
 import Image from "next/image";
-
-// Імпортуємо Link для переходу на сторінку категорії
 import Link from "next/link";
 
-// Описуємо props нашої картки
 type CategoryCardProps = {
-  // Назва категорії
   title: string;
-
-  // Шлях до картинки
   image: string;
-
-  // Посилання на сторінку категорії
   href: string;
 };
 
-// Створюємо компонент картки
 export default function CategoryCard({
   title,
   image,
   href,
 }: CategoryCardProps) {
-  // Повертаємо посилання-картку
   return (
-    <Link
-      // Куди переходимо
-      href={href}
-      // Головний контейнер картки
-      className="
-        group
-        relative
-        block
-        shrink-0
-        overflow-hidden
-        rounded-2xl
-      "
-    >
+    <Link href={href} className="group block">
       {/* ================================================= */}
       {/* DESKTOP VERSION */}
       {/* ================================================= */}
+
       <div
         className="
     relative
     hidden
+    h-[240px]
     w-full
     overflow-hidden
     rounded-2xl
@@ -51,41 +30,51 @@ export default function CategoryCard({
     lg:block
   "
       >
-        <Image
-          src={image}
-          alt={title}
-          width={1024}
-          height={600}
-          className="
-    relative
-    -left-[18%]
-    block
-    h-auto
-    w-full
-    rounded-2xl
-    object-contain
-    transition-transform
-    duration-300
-    ease-out
-    group-hover:scale-[1.02]
-    "
-        />
-        {/* Текст поверх картинки */}
+        {/* КАРТИНКА */}
         <div
           className="
       absolute
-      right-[8%]
+      bottom-0
+      left-0
+      h-full
+      w-[55%]
+    "
+        >
+          <Image
+            src={image}
+            alt={title}
+            fill
+            className={`
+        object-contain
+        object-bottom
+        transition-transform
+        duration-300
+        group-hover:scale-105
+
+        ${
+          title === "Гризунам"
+            ? "scale-[1.25] origin-bottom"
+            : "scale-[1.45] origin-bottom"
+        }
+      `}
+          />
+        </div>
+
+        {/* ТЕКСТ */}
+        <div
+          className="
+      absolute
+      right-[9%]
       top-1/2
       -translate-y-1/2
     "
         >
           <h3
             className="
+        max-w-[180px]
         text-[clamp(1rem,1.5vw,1.5rem)]
-        font-semibold 
-        max-w-[100px]
+        font-semibold
         leading-tight
-        
       "
           >
             {title}
@@ -96,8 +85,6 @@ export default function CategoryCard({
         mt-4
         block
         text-[clamp(0.75rem,1.2vw,0.9rem)]
-
-
       "
           >
             Переглянути →
@@ -110,8 +97,6 @@ export default function CategoryCard({
       {/* ================================================= */}
 
       <div
-        // На mobile показуємо маленьку картку
-        // На desktop приховуємо
         className="
           flex
           w-[90px]
@@ -133,7 +118,6 @@ export default function CategoryCard({
             bg-[#F8E3C9]
           "
         >
-          {/* Картинка */}
           <Image
             src={image}
             alt={title}
@@ -150,7 +134,7 @@ export default function CategoryCard({
           />
         </div>
 
-        {/* Назва категорії */}
+        {/* Назва */}
         <span
           className="
             mt-2
