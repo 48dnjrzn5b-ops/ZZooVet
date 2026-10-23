@@ -1,24 +1,11 @@
-// Імпортуємо компонент картки категорії
 import CategoryCard from "./CategoryCard";
-import Link from "next/link";
 
-// Імпортуємо масив усіх категорій
 import { categories } from "@/data/categories";
 
-// Створюємо компонент блоку категорій
 export default function PopularCategories() {
-  // Беремо перші 3 категорії для desktop
-  const popularCategories = categories.slice(0, 3);
-
-  // Повертаємо розмітку
   return (
-    <section
-      // Секція займає всю ширину
-      className="w-full"
-    >
+    <section className="w-full">
       <div
-        // Центруємо контейнер
-        // Додаємо бокові та вертикальні відступи
         className="
           mx-auto
           w-full
@@ -29,18 +16,16 @@ export default function PopularCategories() {
           lg:px-10
         "
       >
-        {/* ============================== */}
         {/* Заголовок */}
-        {/* ============================== */}
         <div className="mb-6 flex items-center justify-between">
           <h2
             className="
-      font-heading
-      text-2xl
-      font-bold
-      text-foreground
-      sm:text-3xl
-    "
+              font-heading
+              text-2xl
+              font-bold
+              text-foreground
+              sm:text-3xl
+            "
           >
             {/* Mobile / tablet */}
             <span className="lg:hidden text-[clamp(1rem,1.5vw,1.5rem)]">
@@ -49,66 +34,32 @@ export default function PopularCategories() {
 
             {/* Desktop */}
             <span className="hidden lg:inline text-[clamp(1rem,1.5vw,1.5rem)]">
-              Популярні категорії
+              Категорії
             </span>
           </h2>
-
-          {/* Усі категорії */}
-          <Link
-            href="/catalog"
-            className="
-      text-sm
-      font-medium
-      text-[#A48850]
-      underline
-      underline-offset-4
-      transition-opacity
-      hover:opacity-60
-      sm:text-base
-    "
-          >
-            Більше →
-          </Link>
         </div>
 
-        {/* ================================================= */}
-        {/* DESKTOP — 3 великі категорії */}
-        {/* ================================================= */}
-
+        {/* DESKTOP */}
         <div
-          // На mobile приховано
-          // На desktop показуємо grid із 3 колонок
           className="
             hidden
-            gap-5
+            gap-4
             lg:grid
-            lg:grid-cols-3
+            lg:grid-cols-6
           "
         >
-          {/* Перебираємо перші 3 категорії */}
-          {popularCategories.map((category) => (
+          {categories.map((category) => (
             <CategoryCard
-              // Унікальний key
               key={category.title}
-              // Назва категорії
               title={category.title}
-              // Картинка категорії
               image={category.image}
-              // Посилання категорії
               href={category.href}
             />
           ))}
         </div>
 
-        {/* ================================================= */}
-        {/* MOBILE — всі категорії горизонтально */}
-        {/* ================================================= */}
-
+        {/* MOBILE */}
         <div
-          // На mobile показуємо flex
-          // Категорії стоять в один ряд
-          // overflow-x-auto дозволяє свайпати вправо
-          // На desktop блок прихований
           className="
             flex
             gap-4
@@ -118,16 +69,11 @@ export default function PopularCategories() {
             scrollbar-none
           "
         >
-          {/* Перебираємо всі 8 категорій */}
           {categories.map((category) => (
             <CategoryCard
-              // Унікальний key
               key={category.title}
-              // Назва категорії
               title={category.title}
-              // Картинка категорії
               image={category.image}
-              // Посилання категорії
               href={category.href}
             />
           ))}

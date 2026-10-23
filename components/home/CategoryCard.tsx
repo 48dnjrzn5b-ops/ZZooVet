@@ -13,82 +13,61 @@ export default function CategoryCard({
   href,
 }: CategoryCardProps) {
   return (
-    <Link href={href} className="group block">
+    <Link href={href} className="group block w-full">
       {/* ================================================= */}
       {/* DESKTOP VERSION */}
       {/* ================================================= */}
 
       <div
         className="
-    relative
-    hidden
-    h-[240px]
-    w-full
-    overflow-hidden
-    rounded-2xl
-    bg-[#F1E7D8]
-    lg:block
-  "
+          hidden
+          flex-col
+          overflow-hidden
+          rounded-2xl
+          bg-[#F1E7D8]
+          lg:flex
+        "
       >
-        {/* КАРТИНКА */}
-        <div
-          className="
-      absolute
-      bottom-0
-      left-0
-      h-full
-      w-[55%]
-    "
-        >
+        {/* КАРТИНКА НА ВСЮ КАРТКУ (без відступів, розтягується на всю ширину і висоту) */}
+        <div className="relative h-[235px] w-full overflow-hidden">
           <Image
             src={image}
             alt={title}
             fill
-            className={`
-        object-contain
-        object-bottom
-        transition-transform
-        duration-300
-        group-hover:scale-105
-
-        ${
-          title === "Гризунам"
-            ? "scale-[1.25] origin-bottom"
-            : "scale-[1.45] origin-bottom"
-        }
-      `}
+            className="
+              object-cover
+              object-center
+              transition-transform
+              duration-300
+              group-hover:scale-105
+            "
           />
         </div>
 
-        {/* ТЕКСТ */}
+        {/* ПІДПИС ОКРЕМО ЯК КНОПКА ЗНИЗУ */}
         <div
           className="
-      absolute
-      right-[9%]
-      top-1/2
-      -translate-y-1/2
-    "
+            flex
+            h-[45px]
+            w-full
+            items-center
+            justify-center
+            bg-[#E6D5BE]
+            text-center
+            transition-colors
+            group-hover:bg-[#D8C4AB]
+          "
         >
           <h3
             className="
-        max-w-[180px]
-        text-[clamp(1rem,1.5vw,1.5rem)]
-        font-semibold
-        leading-tight
-      "
+              text-[15px]
+              font-semibold
+              leading-tight
+              text-[#202828]
+            "
           >
             {title}
           </h3>
-
-          <span
-            className="
-        mt-4
-        block
-        text-[clamp(0.75rem,1.2vw,0.9rem)]
-      "
-          >
-            Переглянути →
-          </span>
         </div>
       </div>
 
@@ -99,13 +78,12 @@ export default function CategoryCard({
       <div
         className="
           flex
-          w-[90px]
+          w-full
           flex-col
           items-center
           lg:hidden
         "
       >
-        {/* Кругла область картинки */}
         <div
           className="
             flex
@@ -121,12 +99,12 @@ export default function CategoryCard({
           <Image
             src={image}
             alt={title}
-            width={120}
-            height={120}
+            width={130}
+            height={130}
             className="
               h-full
               w-full
-              object-contain
+              object-cover
               transition-transform
               duration-300
               group-hover:scale-105
@@ -134,7 +112,6 @@ export default function CategoryCard({
           />
         </div>
 
-        {/* Назва */}
         <span
           className="
             mt-2

@@ -2,19 +2,105 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
-import { Heart, Menu, Search, ShoppingCart, UserRound } from "lucide-react";
+import {
+  ChevronDown,
+  Clock,
+  Heart,
+  Menu,
+  Phone,
+  Search,
+  ShoppingCart,
+  UserRound,
+  X,
+} from "lucide-react";
+
+import { navigation } from "@/data/navigation";
+import { catalogCategories } from "@/data/catalogCategories";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CartSheet from "@/components/cart/CartSheet";
+import FavoritesSheet from "@/components/cart/FavoritesSheet";
+import { useShop } from "@/components/ShopContext";
+import AuthModal from "@/components/AuthModal";
 
 export default function Header() {
   const [cartOpen, setCartOpen] = useState(false);
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+
+  useEffect(() => {
+    function handleAuthSuccess() {
+      setAuthOpen(false);
+    }
+
+    window.addEventListener("auth-success", handleAuthSuccess);
+
+    return () => {
+      window.removeEventListener("auth-success", handleAuthSuccess);
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleOpenLogin() {
+      setAuthOpen(true);
+    }
+
+    window.addEventListener("open-login", handleOpenLogin);
+
+    return () => {
+      window.removeEventListener("open-login", handleOpenLogin);
+    };
+  }, []);
+  const [search, setSearch] = useState("");
+  const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function checkUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      setIsAdmin(user?.app_metadata?.role === "admin");
+      setIsAuthChecked(true);
+    }
+
+    checkUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      checkUser();
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  function handleAccountClick() {
+    if (!isAuthChecked) return;
+
+    if (isAdmin) {
+      router.push("/admin");
+    } else {
+      setAuthOpen(true);
+    }
+  }
+
+  // Отримуємо реальні дані кошика та улюблених
+  const { cart, favorites } = useShop();
 
   return (
-    <header className="w-full">
+    <header className="relative z-50 w-full">
       <div
         className="
           mx-auto
@@ -34,167 +120,204 @@ export default function Header() {
         "
       >
         {/* ==================== */}
-        {/* Mobile top row */}
+        {/* MOBILE TOP ROW */}
         {/* ==================== */}
 
         <div
           className="
             flex
             w-full
-            items-center
-            justify-between
+            flex-col
+            gap-2
             lg:hidden
           "
         >
-          {/* Burger */}
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="
-              h-10
-              w-10
-              shrink-0
-              rounded-full
-              bg-muted
-              text-foreground
-              hover:bg-primary/10
-            "
-            aria-label="Меню"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-
-          {/* Logo */}
-
-          <Link
-            href="/"
-            aria-label="300VetСвіт"
+          <div
             className="
               flex
+              w-full
               items-center
-              gap-2
+              justify-between
+              gap-5
             "
           >
-            <Image
-              src="/logo.png"
-              alt="300VetСвіт"
-              width={45}
-              height={45}
+            {/* BURGER */}
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
               className="
                 h-10
                 w-10
-                object-contain
+                shrink-0
+                rounded-full
+                bg-muted
+                text-foreground
+                hover:bg-primary/10
               "
-            />
-
-            <span
-              className="
-                whitespace-nowrap
-                font-heading
-                text-xl
-                font-bold
-                leading-none
-                tracking-tight
-              "
+              aria-label="Меню"
             >
-              <span className="text-secondary">300</span>
-              <span className="text-primary">Vet</span>
-              <span className="text-accent">Світ</span>
-            </span>
-          </Link>
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
 
-          {/* Mobile actions */}
-
-          <div className="ml-auto flex items-center gap-0.5">
-            {/* Account */}
+            {/* MOBILE LOGO */}
 
             <Link
-              href="/login"
-              aria-label="Акаунт"
-              className="
-                flex
-                h-9
-                w-9
-                items-center
-                justify-center
-                rounded-full
-                text-foreground
-                transition-colors
-                hover:bg-muted
-              "
+              href="/"
+              aria-label="300VetСвіт"
+              className="flex items-center justify-center"
             >
-              <UserRound className="h-5 w-5" />
+              <Image
+                src="/logo.svg"
+                alt="300VetСвіт"
+                width={50}
+                height={50}
+                className="h-10 w-10 object-contain"
+              />
             </Link>
 
-            {/* Favorites */}
+            {/* MOBILE ACTIONS */}
 
-            <Link
-              href="/favorites"
-              aria-label="Обране"
-              className="
-                flex
-                h-9
-                w-9
-                items-center
-                justify-center
-                rounded-full
-                text-foreground
-                transition-colors
-                hover:bg-muted
-              "
-            >
-              <Heart className="h-5 w-5" />
-            </Link>
+            <div className="ml-auto flex items-center gap-0.5">
+              {/* ACCOUNT */}
 
-            {/* Cart */}
-
-            <button
-              type="button"
-              onClick={() => setCartOpen(true)}
-              aria-label="Кошик"
-              className="
-                relative
-                flex
-                h-9
-                w-9
-                items-center
-                justify-center
-                rounded-full
-                text-foreground
-                transition-colors
-                hover:bg-muted
-              "
-            >
-              <ShoppingCart className="h-5 w-5" />
-
-              <span
+              <button
+                type="button"
+                onClick={handleAccountClick}
+                aria-label="Акаунт"
                 className="
-                  absolute
-                  -right-0.5
-                  -top-0.5
+    flex
+    h-9
+    w-9
+    items-center
+    justify-center
+    rounded-full
+    text-foreground
+    transition-colors
+    hover:bg-muted
+  "
+              >
+                <UserRound className="h-5 w-5" />
+              </button>
+
+              {/* FAVORITES (MOBILE) */}
+
+              <button
+                type="button"
+                onClick={() => setFavoritesOpen(true)}
+                aria-label="Обране"
+                className="
+    relative
+    flex
+    h-9
+    w-9
+    items-center
+    justify-center
+    rounded-full
+    text-foreground
+    transition-colors
+    hover:bg-muted
+  "
+              >
+                <Heart className="h-5 w-5" />
+
+                {favorites.length > 0 && (
+                  <span
+                    className="
+        absolute
+        -right-1
+        -top-1
+        flex
+        h-4
+        w-4
+        items-center
+        justify-center
+        rounded-full
+        bg-red-500
+        text-[10px]
+        font-bold
+        text-white
+      "
+                  >
+                    {favorites.length}
+                  </span>
+                )}
+              </button>
+
+              {/* CART (MOBILE) */}
+
+              <button
+                type="button"
+                onClick={() => setCartOpen(true)}
+                aria-label="Кошик"
+                className="
+                  relative
                   flex
-                  h-4
-                  min-w-4
+                  h-9
+                  w-9
                   items-center
                   justify-center
                   rounded-full
-                  bg-secondary
-                  px-1
-                  text-[0.6rem]
-                  font-bold
-                  leading-none
-                  text-secondary-foreground
+                  text-foreground
+                  transition-colors
+                  hover:bg-muted
                 "
               >
-                2
-              </span>
-            </button>
+                <ShoppingCart className="h-5 w-5" />
+
+                {cart.length > 0 && (
+                  <span
+                    className="
+                      absolute
+                      -right-1
+                      -top-1
+                      flex
+                      h-4
+                      w-4
+                      items-center
+                      justify-center
+                      rounded-full
+                      bg-[#66852A]
+                      text-[10px]
+                      font-bold
+                      text-white
+                    "
+                  >
+                    {cart.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* MOBILE SCHEDULE */}
+          <div
+            className="
+              flex
+              items-center
+              justify-center
+              gap-1.5
+              text-xs
+              font-medium
+              text-muted-foreground
+              bg-muted/40
+              py-1.5
+              rounded-lg
+            "
+          >
+            <Clock className="h-3.5 w-3.5 text-[#66852A]" />
+            <span>Графік: Пн-Нд 10:00 - 20:00</span>
           </div>
         </div>
 
         {/* ==================== */}
-        {/* Desktop Logo */}
+        {/* DESKTOP LOGO */}
         {/* ==================== */}
 
         <Link
@@ -204,40 +327,52 @@ export default function Header() {
             hidden
             shrink-0
             items-center
-            gap-2
             lg:flex
+            h-[clamp(3.5rem,6vw,5.5rem)]
+            w-[clamp(3.5rem,6vw,5.5rem)]
           "
         >
           <Image
-            src="/logo.png"
+            src="/logo.svg"
             alt="300VetСвіт"
-            width={70}
-            height={70}
+            width={90}
+            height={90}
             className="
-              h-[clamp(2.75rem,5vw,4.25rem)]
-              w-[clamp(2.75rem,5vw,4.25rem)]
+              h-full
+              w-full
               object-contain
             "
           />
-
-          <span
-            className="
-              whitespace-nowrap
-              font-heading
-              text-[clamp(1.25rem,2.2vw,1.875rem)]
-              font-bold
-              leading-none
-              tracking-tight
-            "
-          >
-            <span className="text-secondary">300</span>
-            <span className="text-primary">Vet</span>
-            <span className="text-accent">Світ</span>
-          </span>
         </Link>
 
         {/* ==================== */}
-        {/* Search */}
+        {/* DESKTOP CATALOG */}
+        {/* ==================== */}
+
+        <Link
+          href="/catalog"
+          className="
+            hidden
+            h-14
+            shrink-0
+            items-center
+            gap-2
+            rounded-xl
+            bg-[#66852A]
+            px-6
+            font-semibold
+            text-white
+            hover:bg-[#A1BB6F]
+            lg:flex
+          "
+        >
+          <Menu className="h-5 w-5" />
+          <span>Каталог товарів</span>
+          <ChevronDown className="h-4 w-4" />
+        </Link>
+
+        {/* ==================== */}
+        {/* SEARCH */}
         {/* ==================== */}
 
         <div
@@ -262,8 +397,6 @@ export default function Header() {
               -translate-y-1/2
               text-muted-foreground
               sm:left-5
-              sm:h-5
-              sm:w-5
               lg:h-6
               lg:w-6
             "
@@ -271,6 +404,20 @@ export default function Header() {
 
           <Input
             type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                const query = search.trim();
+
+                if (!query) {
+                  router.push("/catalog");
+                  return;
+                }
+
+                router.push(`/catalog?search=${encodeURIComponent(query)}`);
+              }
+            }}
             placeholder="Пошук товарів..."
             className="
               h-11
@@ -295,7 +442,7 @@ export default function Header() {
         </div>
 
         {/* ==================== */}
-        {/* Desktop Actions */}
+        {/* DESKTOP ACTIONS */}
         {/* ==================== */}
 
         <div
@@ -303,14 +450,37 @@ export default function Header() {
             hidden
             shrink-0
             items-center
-            gap-[clamp(0.75rem,1.5vw,1.5rem)]
+            gap-[clamp(0.75rem,1.2vw,1.25rem)]
             lg:flex
           "
         >
-          {/* Login */}
+          {/* SCHEDULE */}
 
-          <Link
-            href="/login"
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+              whitespace-nowrap
+              text-[clamp(0.75rem,0.95vw,0.9rem)]
+              font-medium
+              text-muted-foreground
+            "
+          >
+            <Clock
+              className="
+                h-[clamp(1.15rem,1.6vw,1.5rem)]
+                w-[clamp(1.15rem,1.6vw,1.5rem)]
+                text-[#66852A]
+              "
+            />
+            <span>Пн-Нд: 10:00 - 20:00</span>
+          </div>
+
+          {/* PHONE */}
+
+          <a
+            href="tel:+380991234567"
             className="
               flex
               items-center
@@ -320,46 +490,100 @@ export default function Header() {
               font-medium
               text-foreground
               transition-colors
-              hover:text-primary
+              hover:text-[#66852A]
             "
+          >
+            <Phone
+              className="
+                h-[clamp(1.25rem,1.8vw,1.75rem)]
+                w-[clamp(1.25rem,1.8vw,1.75rem)]
+                text-[#66852A]
+              "
+            />
+
+            <span>+38 099 123 45 67</span>
+          </a>
+
+          {/* LOGIN */}
+
+          <button
+            type="button"
+            onClick={handleAccountClick}
+            className="
+    flex
+    items-center
+    gap-2
+    whitespace-nowrap
+    text-[clamp(0.8rem,1vw,0.95rem)]
+    font-medium
+    text-foreground
+    transition-colors
+    hover:text-primary
+  "
           >
             <UserRound
               className="
-                h-[clamp(1.25rem,1.8vw,1.75rem)]
-                w-[clamp(1.25rem,1.8vw,1.75rem)]
-              "
+      h-[clamp(1.25rem,1.8vw,1.75rem)]
+      w-[clamp(1.25rem,1.8vw,1.75rem)]
+    "
             />
 
             <span>Увійти</span>
-          </Link>
+          </button>
 
-          {/* Favorites */}
+          {/* FAVORITES (DESKTOP) */}
 
-          <Link
-            href="/favorites"
+          <button
+            type="button"
+            onClick={() => setFavoritesOpen(true)}
             className="
-              flex
-              items-center
-              gap-2
-              whitespace-nowrap
-              text-[clamp(0.8rem,1vw,0.95rem)]
-              font-medium
-              text-foreground
-              transition-colors
-              hover:text-primary
-            "
+    relative
+    flex
+    items-center
+    gap-2
+    whitespace-nowrap
+    text-[clamp(0.8rem,1vw,0.95rem)]
+    font-medium
+    text-foreground
+    transition-colors
+    hover:text-primary
+  "
           >
-            <Heart
-              className="
-                h-[clamp(1.25rem,1.8vw,1.75rem)]
-                w-[clamp(1.25rem,1.8vw,1.75rem)]
-              "
-            />
+            <div className="relative flex items-center">
+              <Heart
+                className="
+        h-[clamp(1.25rem,1.8vw,1.75rem)]
+        w-[clamp(1.25rem,1.8vw,1.75rem)]
+      "
+              />
+
+              {favorites.length > 0 && (
+                <span
+                  className="
+          absolute
+          -right-2
+          -top-2
+          flex
+          h-5
+          w-5
+          items-center
+          justify-center
+          rounded-full
+          bg-red-500
+          text-[10px]
+          font-bold
+          text-white
+        "
+                >
+                  {favorites.length}
+                </span>
+              )}
+            </div>
 
             <span>Обране</span>
-          </Link>
+          </button>
 
-          {/* Cart */}
+          {/* CART (DESKTOP) */}
 
           <button
             type="button"
@@ -377,7 +601,7 @@ export default function Header() {
               hover:text-primary
             "
           >
-            <div className="relative">
+            <div className="relative flex items-center">
               <ShoppingCart
                 className="
                   h-[clamp(1.25rem,1.8vw,1.75rem)]
@@ -385,30 +609,27 @@ export default function Header() {
                 "
               />
 
-              <span
-                className="
-                  absolute
-                  -right-2
-                  -top-2
-                  flex
-                  h-4
-                  min-w-4
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-secondary
-                  px-1
-                  text-[0.6rem]
-                  font-bold
-                  leading-none
-                  text-secondary-foreground
-                  sm:h-5
-                  sm:min-w-5
-                  sm:text-xs
-                "
-              >
-                2
-              </span>
+              {cart.length > 0 && (
+                <span
+                  className="
+                    absolute
+                    -right-2
+                    -top-2
+                    flex
+                    h-5
+                    w-5
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-[#66852A]
+                    text-[10px]
+                    font-bold
+                    text-white
+                  "
+                >
+                  {cart.length}
+                </span>
+              )}
             </div>
 
             <span>Кошик</span>
@@ -416,11 +637,244 @@ export default function Header() {
         </div>
       </div>
 
-      {/* ==================== */}
-      {/* Cart Sheet */}
-      {/* ==================== */}
+      {/* ================================================== */}
+      {/* MOBILE MENU */}
+      {/* ================================================== */}
+
+      {mobileMenuOpen && (
+        <div
+          className="
+            absolute
+            left-0
+            top-full
+            z-[100]
+            w-full
+            border-t
+            border-border
+            bg-background
+            shadow-xl
+            lg:hidden
+          "
+        >
+          <div className="max-h-[calc(100vh-80px)] overflow-y-auto">
+            {/* КАТАЛОГ */}
+
+            <button
+              type="button"
+              onClick={() => setMobileCatalogOpen((prev) => !prev)}
+              className="
+                flex
+                w-full
+                items-center
+                justify-between
+                border-b
+                border-border
+                px-5
+                py-4
+                text-left
+                text-base
+                font-semibold
+                text-foreground
+              "
+            >
+              <span className="flex items-center gap-3">
+                <Menu className="h-5 w-5 text-[#66852A]" />
+                Каталог товарів
+              </span>
+
+              <ChevronDown
+                className={`
+                  h-5
+                  w-5
+                  transition-transform
+                  duration-200
+                  ${mobileCatalogOpen ? "rotate-180" : ""}
+                `}
+              />
+            </button>
+
+            {/* КАТЕГОРІЇ */}
+
+            {mobileCatalogOpen && (
+              <div className="bg-muted/30">
+                {Object.entries(catalogCategories).map(
+                  ([categorySlug, category]) => (
+                    <MobileCategory
+                      key={categorySlug}
+                      categorySlug={categorySlug}
+                      category={category}
+                      onNavigate={() => setMobileMenuOpen(false)}
+                    />
+                  )
+                )}
+
+                {/* АКЦІЇ */}
+
+                <Link
+                  href="/catalog/sale"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="
+                    mx-4
+                    my-3
+                    flex
+                    items-center
+                    justify-center
+                    rounded-lg
+                    bg-[#F77601]
+                    px-4
+                    py-3
+                    text-sm
+                    font-semibold
+                    text-white
+                  "
+                >
+                  Акції
+                </Link>
+              </div>
+            )}
+
+            {/* ІНШІ ПУНКТИ НАВІГАЦІЇ */}
+
+            <div className="border-t border-border">
+              {navigation
+                .filter((item) => item.href !== "/catalog")
+                .map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="
+                      block
+                      border-b
+                      border-border
+                      px-5
+                      py-4
+                      text-base
+                      font-medium
+                      text-foreground
+                      transition-colors
+                      hover:bg-muted
+                    "
+                  >
+                    {item.title}
+                  </Link>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* AUTH */}
+
+      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
+
+      {/* CART */}
+
+      {/* FAVORITES */}
+
+      <FavoritesSheet open={favoritesOpen} onOpenChange={setFavoritesOpen} />
+
+      {/* CART */}
 
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
     </header>
+  );
+}
+
+/* ================================================== */
+/* MOBILE CATEGORY */
+/* ================================================== */
+
+function MobileCategory({
+  categorySlug,
+  category,
+  onNavigate,
+}: {
+  categorySlug: string;
+  category: {
+    title: string;
+    subcategories: {
+      slug: string;
+      title: string;
+    }[];
+  };
+  onNavigate: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const hasSubcategories = category.subcategories.length > 0;
+
+  return (
+    <div className="border-b border-border">
+      <div className="flex items-center">
+        {/* ОСНОВНА КАТЕГОРІЯ */}
+
+        <Link
+          href={`/catalog/${categorySlug}`}
+          onClick={onNavigate}
+          className="
+            flex-1
+            px-7
+            py-3.5
+            text-sm
+            font-medium
+            text-foreground
+          "
+        >
+          {category.title}
+        </Link>
+
+        {/* СТРІЛКА */}
+
+        {hasSubcategories && (
+          <button
+            type="button"
+            onClick={() => setOpen((prev) => !prev)}
+            aria-label={`Відкрити ${category.title}`}
+            className="
+              flex
+              h-12
+              w-12
+              items-center
+              justify-center
+              text-muted-foreground
+            "
+          >
+            <ChevronDown
+              className={`
+                h-4
+                w-4
+                transition-transform
+                duration-200
+                ${open ? "rotate-180" : ""}
+              `}
+            />
+          </button>
+        )}
+      </div>
+
+      {/* ПІДКАТЕГОРІЇ */}
+
+      {open && hasSubcategories && (
+        <div className="bg-background px-7 pb-3">
+          {category.subcategories.map((subcategory) => (
+            <Link
+              key={subcategory.slug}
+              href={`/catalog/${categorySlug}?subcategory=${subcategory.slug}`}
+              onClick={onNavigate}
+              className="
+                block
+                py-2
+                text-sm
+                text-muted-foreground
+                transition-colors
+                hover:text-[#66852A]
+              "
+            >
+              {subcategory.title}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

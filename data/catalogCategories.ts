@@ -53,6 +53,10 @@ export const catalogCategories = {
         slug: "food",
       },
       {
+        title: "Ласощі для котів",
+        slug: "treats",
+      },
+      {
         title: "Наповнювачі",
         slug: "litter",
       },

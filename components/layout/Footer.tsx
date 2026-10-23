@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -32,15 +33,25 @@ export default function Footer() {
           <div>
             <Link
               href="/"
+              aria-label="300VetСвіт"
               className="
-                font-heading
-                text-2xl
-                font-bold
-              "
+            hidden
+            shrink-0
+            items-center
+            lg:flex
+          "
             >
-              <span className="text-[#D6B36A]">300</span>
-              <span>Vet</span>
-              <span className="text-[#D6B36A]">Світ</span>
+              <Image
+                src="/logo.svg"
+                alt="300VetСвіт"
+                width={70}
+                height={70}
+                className="
+              h-[clamp(2.75rem,5vw,4.25rem)]
+              w-[clamp(2.75rem,5vw,4.25rem)]
+              object-contain
+            "
+              />
             </Link>
 
             <p

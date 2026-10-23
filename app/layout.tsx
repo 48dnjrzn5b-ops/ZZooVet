@@ -6,6 +6,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CategoryNav from "@/components/layout/CategoryNav";
 import { cn } from "@/lib/utils";
+import { ShopProvider } from "@/components/ShopContext"; // Імпортуємо наш контекст із components
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -36,12 +37,14 @@ export default function RootLayout({
   return (
     <html lang="uk" className={cn("font-sans", geist.variable)}>
       <body className={`${poppins.variable} ${inter.variable}`}>
-        <Header />
-        <CategoryNav />
+        <ShopProvider>
+          <Header />
+          <CategoryNav />
 
-        <main>{children}</main>
+          <main>{children}</main>
 
-        <Footer />
+          <Footer />
+        </ShopProvider>
       </body>
     </html>
   );

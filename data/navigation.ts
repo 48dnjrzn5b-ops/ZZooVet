@@ -5,11 +5,11 @@ export const navigation = [
   },
   {
     title: "Популярні",
-    href: "/popular",
+    href: "/catalog/popular",
   },
   {
     title: "Новинки",
-    href: "/new",
+    href: "/catalog/new",
   },
   {
     title: "Про нас",
@@ -17,7 +17,7 @@ export const navigation = [
   },
   {
     title: "Доставка та оплата",
-    href: "/delivery-payment",
+    href: "/delivery",
   },
   {
     title: "Контакти",

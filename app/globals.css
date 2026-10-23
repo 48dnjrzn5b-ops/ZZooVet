@@ -130,7 +130,14 @@
     font-family: var(--font-inter), sans-serif;
   }
 }
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
 .dark {
   --background: oklch(0.16 0 0);
   --foreground: oklch(0.98 0 0);

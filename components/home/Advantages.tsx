@@ -51,6 +51,7 @@ export default function Advantages() {
         py-4
         sm:px-2
         lg:px-14
+        sm:hidden
       "
     >
       {/* Контейнер самого блоку */}
