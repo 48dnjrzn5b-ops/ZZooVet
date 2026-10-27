@@ -10,6 +10,17 @@ type OrderItem = {
   price: number;
   quantity: number;
   image?: string | null;
+  brand?: string | null;
+  sku?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  short_description?: string | null;
+  description?: string | null;
+  advantages?: string | null;
+  characteristics?: string | null;
+  composition?: string | null;
+  feeding_recommendations?: string | null;
+  attributes?: Record<string, unknown> | null;
 };
 
 type Order = {
@@ -44,6 +55,71 @@ const statusStyles: Record<string, string> = {
 };
 
 const money = (value: number) => `${Number(value).toLocaleString("uk-UA")} ₴`;
+
+const attributeLabels: Record<string, string> = {
+  animal_type: "Вид тварини",
+  animaltype: "Вид тварини",
+  "вид тварини": "Вид тварини",
+  species: "Вид тварини",
+  animal: "Вид тварини",
+  weight: "Вага",
+  volume: "Об’єм",
+  size: "Розмір",
+  age: "Вік тварини",
+  animal_age: "Вік тварини",
+  breed: "Порода",
+  sex: "Стать",
+  material: "Матеріал",
+  color: "Колір",
+  colour: "Колір",
+  package_type: "Тип упаковки",
+  food_type: "Тип корму",
+  flavor: "Смак",
+  taste: "Смак",
+  "вага / об’єм": "Вага / об’єм",
+  "вік тварини": "Вік тварини",
+  "тип упаковки": "Тип упаковки",
+};
+
+function formatAttributeLabel(key: string): string {
+  const normalized = key
+    .trim()
+    .toLocaleLowerCase("uk-UA")
+    .replace(/[_-]+/g, " ");
+  return (
+    attributeLabels[normalized] ??
+    attributeLabels[key.trim().toLocaleLowerCase("uk-UA")] ??
+    normalized.charAt(0).toLocaleUpperCase("uk-UA") + normalized.slice(1)
+  );
+}
+
+function formatAttributeValue(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(formatAttributeValue).filter(Boolean).join(", ");
+  }
+  return "";
+}
+
+function getItemAttributes(item: OrderItem): [string, string][] {
+  if (!item.attributes || typeof item.attributes !== "object") return [];
+
+  const skipped = new Set(["brand", "sku", "category", "subcategory"]);
+
+  return Object.entries(item.attributes)
+    .filter(([key]) => !skipped.has(key.trim().toLocaleLowerCase("uk-UA")))
+    .map(
+      ([key, value]) =>
+        [formatAttributeLabel(key), formatAttributeValue(value)] as [
+          string,
+          string
+        ]
+    )
+    .filter(([, value]) => value.length > 0);
+}
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -333,20 +409,155 @@ export default function AdminOrdersPage() {
                       Товари
                     </h3>
 
-                    <div className="space-y-3">
-                      {(order.items ?? []).map((item, index) => (
-                        <div
-                          key={`${order.id}-${item.id}-${index}`}
-                          className="flex justify-between gap-3 text-sm"
-                        >
-                          <span className="text-gray-600">
-                            {item.name} × {item.quantity}
-                          </span>
-                          <span className="shrink-0 font-medium text-[#4A3528]">
-                            {money(Number(item.price) * item.quantity)}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="space-y-4">
+                      {(order.items ?? []).map((item, index) => {
+                        const attributes = getItemAttributes(item);
+                        const hasDetails = Boolean(
+                          item.brand ||
+                            item.sku ||
+                            item.category ||
+                            item.subcategory ||
+                            item.short_description ||
+                            item.description ||
+                            item.advantages ||
+                            item.characteristics ||
+                            item.composition ||
+                            item.feeding_recommendations ||
+                            attributes.length > 0
+                        );
+
+                        return (
+                          <div
+                            key={`${order.id}-${item.id}-${index}`}
+                            className="rounded-xl border border-[#EEE9E1] p-3"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-semibold text-[#4A3528]">
+                                  {item.name}
+                                </p>
+                                <p className="mt-1 text-xs text-gray-500">
+                                  Кількість: {item.quantity} шт. · Ціна за
+                                  одиницю: {money(Number(item.price))}
+                                </p>
+                              </div>
+                              <span className="shrink-0 text-sm font-bold text-[#4A3528]">
+                                {money(Number(item.price) * item.quantity)}
+                              </span>
+                            </div>
+
+                            {hasDetails ? (
+                              <div className="mt-3 space-y-2 border-t border-gray-100 pt-3 text-xs text-gray-600">
+                                {(item.brand ||
+                                  item.sku ||
+                                  item.category ||
+                                  item.subcategory) && (
+                                  <div className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+                                    {item.brand && (
+                                      <p>
+                                        <strong className="text-gray-800">
+                                          Бренд:
+                                        </strong>{" "}
+                                        {item.brand}
+                                      </p>
+                                    )}
+                                    {item.sku && (
+                                      <p>
+                                        <strong className="text-gray-800">
+                                          Артикул:
+                                        </strong>{" "}
+                                        {item.sku}
+                                      </p>
+                                    )}
+                                    {item.category && (
+                                      <p>
+                                        <strong className="text-gray-800">
+                                          Категорія:
+                                        </strong>{" "}
+                                        {item.category}
+                                      </p>
+                                    )}
+                                    {item.subcategory && (
+                                      <p>
+                                        <strong className="text-gray-800">
+                                          Підкатегорія:
+                                        </strong>{" "}
+                                        {item.subcategory}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+
+                                {attributes.length > 0 && (
+                                  <div className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+                                    {attributes.map(([label, value]) => (
+                                      <p key={`${item.id}-${label}`}>
+                                        <strong className="text-gray-800">
+                                          {label}:
+                                        </strong>{" "}
+                                        {value}
+                                      </p>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {item.short_description && (
+                                  <p>
+                                    <strong className="text-gray-800">
+                                      Короткий опис:
+                                    </strong>{" "}
+                                    {item.short_description}
+                                  </p>
+                                )}
+                                {item.description && (
+                                  <p className="whitespace-pre-wrap">
+                                    <strong className="text-gray-800">
+                                      Опис:
+                                    </strong>{" "}
+                                    {item.description}
+                                  </p>
+                                )}
+                                {item.advantages && (
+                                  <p className="whitespace-pre-wrap">
+                                    <strong className="text-gray-800">
+                                      Переваги:
+                                    </strong>{" "}
+                                    {item.advantages}
+                                  </p>
+                                )}
+                                {item.characteristics && (
+                                  <p className="whitespace-pre-wrap">
+                                    <strong className="text-gray-800">
+                                      Характеристики:
+                                    </strong>{" "}
+                                    {item.characteristics}
+                                  </p>
+                                )}
+                                {item.composition && (
+                                  <p className="whitespace-pre-wrap">
+                                    <strong className="text-gray-800">
+                                      Склад:
+                                    </strong>{" "}
+                                    {item.composition}
+                                  </p>
+                                )}
+                                {item.feeding_recommendations && (
+                                  <p className="whitespace-pre-wrap">
+                                    <strong className="text-gray-800">
+                                      Рекомендації щодо годування:
+                                    </strong>{" "}
+                                    {item.feeding_recommendations}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="mt-2 text-xs text-gray-400">
+                                Характеристики не збережені в цьому замовленні.
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
 
                     <div className="mt-4 flex justify-between border-t border-gray-100 pt-4">

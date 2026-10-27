@@ -16,7 +16,6 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function AccountPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,26 +26,59 @@ export default function AccountPage() {
     let active = true;
 
     async function loadUser() {
-      const { data, error } = await supabase.auth.getUser();
-      console.log("ACCOUNT USER:", data.user);
-      console.log("ACCOUNT ERROR:", error);
+      const supabase = createClient();
 
-      if (!active) return;
+      try {
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
 
-      if (error || !data.user) {
-        console.error("Помилка отримання користувача:", error);
+        if (!active) return;
 
-        setIsLoading(false);
-        return;
+        if (authError || !user) {
+          console.error("Помилка отримання користувача:", authError);
+          setIsLoading(false);
+          return;
+        }
+
+        setEmail(user.email ?? "");
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, email")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (!active) return;
+
+        if (profileError) {
+          console.error("Помилка завантаження профілю:", profileError);
+        }
+
+        const firstName =
+          profile?.first_name || user.user_metadata?.first_name || "";
+
+        const lastName =
+          profile?.last_name || user.user_metadata?.last_name || "";
+
+        const fullName = `${firstName} ${lastName}`.trim();
+
+        setName(
+          fullName ||
+            user.user_metadata?.full_name ||
+            user.user_metadata?.name ||
+            "Покупець"
+        );
+
+        setEmail(profile?.email || user.email || "");
+      } catch (error) {
+        console.error("Помилка завантаження акаунта:", error);
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
       }
-
-      setEmail(data.user.email ?? "");
-      setName(
-        data.user.user_metadata?.full_name ||
-          data.user.user_metadata?.name ||
-          "Покупець"
-      );
-      setIsLoading(false);
     }
 
     void loadUser();
@@ -54,14 +86,16 @@ export default function AccountPage() {
     return () => {
       active = false;
     };
-  }, [router, supabase]);
+  }, []);
 
   async function handleSignOut() {
     setIsSigningOut(true);
 
+    const supabase = createClient();
     const { error } = await supabase.auth.signOut();
 
     if (error) {
+      console.error("Помилка виходу:", error);
       setIsSigningOut(false);
       return;
     }
@@ -82,27 +116,27 @@ export default function AccountPage() {
   const sections = [
     {
       title: "Мої замовлення",
-      description: "Переглядайте свої покупки та статуси замовлень",
+      description: "Історія покупок і статуси замовлень",
       icon: Package,
       href: "/account/orders",
     },
     {
       title: "Обране",
-      description: "Товари, які ви зберегли для себе",
+      description: "Ваші улюблені товари, збережені для покупок",
       icon: Heart,
       href: "/account/favorites",
     },
     {
       title: "Мої дані",
-      description: "Інформація про ваш акаунт",
+      description: "Ім’я, прізвище, телефон та електронна пошта",
       icon: UserRound,
       href: "/account/profile",
     },
     {
-      title: "Доставка",
-      description: "Ваші контактні та адресні дані",
+      title: "Доставка й оплата",
+      description: "Одержувач, місто, Нова пошта, адреса та спосіб оплати",
       icon: MapPin,
-      href: "/account/profile",
+      href: "/account/delivery",
     },
   ];
 
@@ -121,9 +155,11 @@ export default function AccountPage() {
           <p className="mb-2 text-sm font-medium uppercase tracking-wider text-[#66852A]">
             ЗООVet Світ
           </p>
+
           <h1 className="text-3xl font-bold text-[#4A3528] sm:text-4xl">
             Особистий кабінет
           </h1>
+
           <p className="mt-2 text-gray-600">
             Усе важливе про ваші покупки — в одному місці.
           </p>
@@ -137,9 +173,11 @@ export default function AccountPage() {
 
             <div className="min-w-0 flex-1">
               <p className="text-sm text-gray-500">Раді вас бачити!</p>
+
               <h2 className="mt-1 break-words text-2xl font-semibold text-[#4A3528]">
                 {name}
               </h2>
+
               <p className="mt-1 break-all text-sm text-gray-500">{email}</p>
             </div>
 
@@ -177,6 +215,7 @@ export default function AccountPage() {
                   <h3 className="font-semibold text-[#4A3528]">
                     {section.title}
                   </h3>
+
                   <p className="mt-1 text-sm leading-5 text-gray-500">
                     {section.description}
                   </p>
@@ -194,14 +233,17 @@ export default function AccountPage() {
         <div className="mt-8 rounded-2xl bg-[#EAF0DF] p-6 sm:p-8">
           <div className="flex items-start gap-4">
             <PawPrint size={26} className="mt-1 shrink-0 text-[#66852A]" />
+
             <div>
               <h2 className="text-lg font-semibold text-[#4A3528]">
                 Турбота про ваших улюбленців
               </h2>
+
               <p className="mt-2 text-sm leading-6 text-[#665C50]">
                 Зберігайте улюблені товари та стежте за своїми замовленнями. Ми
                 допоможемо подбати про ваших хвостиків!
               </p>
+
               <Link
                 href="/catalog"
                 className="mt-4 inline-flex items-center gap-2 font-medium text-[#587522] hover:underline"

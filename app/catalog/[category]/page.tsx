@@ -38,6 +38,23 @@ type CategoryData = {
   subcategories: Subcategory[];
 };
 
+const SPECIAL_CATEGORIES = ["all", "sale", "popular", "new"];
+
+const CATEGORY_ALIASES: Record<string, string[]> = {
+  dogs: ["dog", "dogs", "собакам", "собаки"],
+  cats: ["cat", "cats", "котам", "коти", "кошкам"],
+  rodents: ["rodent", "rodents", "гризунам", "гризуни", "гризуны"],
+  birds: ["bird", "birds", "птахам", "птахи", "птицам"],
+  fish: ["fish", "рибам", "рибки", "рыбам"],
+};
+
+const PAGE_TITLES: Record<string, string> = {
+  all: "Усі товари",
+  sale: "Акційні товари",
+  popular: "Популярні товари",
+  new: "Новинки",
+};
+
 export default function CategoryPage({
   params,
   searchParams,
@@ -46,7 +63,7 @@ export default function CategoryPage({
   const { subcategory: subcategorySlug } = use(searchParams);
 
   const urlSearchParams = useSearchParams();
-  const searchQuery = urlSearchParams.get("search")?.trim() || "";
+  const searchQuery = urlSearchParams.get("search")?.trim() ?? "";
 
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -56,17 +73,15 @@ export default function CategoryPage({
 
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState("default");
-
-  // Фільтр ціни
   const [minPrice, setMinPrice] = useState<number | null>(null);
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
 
-  // Вибрані фільтри характеристик
   const [selectedFilters, setSelectedFilters] = useState<
     Record<string, string[]>
   >({});
 
-  // Зміна вибраних фільтрів
+  const isSpecialCategory = SPECIAL_CATEGORIES.includes(category);
+
   function handleFilterChange(key: string, value: string) {
     setSelectedFilters((previous) => {
       const currentValues = previous[key] ?? [];
@@ -81,20 +96,18 @@ export default function CategoryPage({
     });
   }
 
-  // Застосування діапазону ціни
   function handlePriceApply(min: number | null, max: number | null) {
     setMinPrice(min);
     setMaxPrice(max);
   }
 
-  // Скидання всіх фільтрів
   function clearFilters() {
     setSelectedFilters({});
     setMinPrice(null);
     setMaxPrice(null);
   }
 
-  // Завантаження товарів із Supabase
+  // Завантажуємо товари із Supabase.
   useEffect(() => {
     let isMounted = true;
 
@@ -128,7 +141,7 @@ export default function CategoryPage({
     };
   }, []);
 
-  // Завантаження активних категорій і підкатегорій із Supabase
+  // Завантажуємо активні категорії та підкатегорії.
   useEffect(() => {
     let isMounted = true;
 
@@ -165,7 +178,7 @@ export default function CategoryPage({
     };
   }, []);
 
-  // Формування структури категорій із даних Supabase
+  // Формуємо дерево категорій.
   const categoriesRecord = useMemo(() => {
     const record: Record<string, CategoryData> = {};
 
@@ -190,50 +203,45 @@ export default function CategoryPage({
 
   const currentCategoryData = categoriesRecord[category];
 
-  // Товари поточної категорії та підкатегорії
+  // Визначаємо товари для вибраного розділу.
   const baseProducts = useMemo(() => {
-    // Акційні товари
+    if (category === "all") {
+      return products;
+    }
+
     if (category === "sale") {
       return products.filter((product) => product.is_sale);
     }
 
-    // Популярні товари
     if (category === "popular") {
       return products.filter((product) => product.is_popular);
     }
 
-    // Новинки
     if (category === "new") {
       return products.filter((product) => product.is_new);
     }
 
-    // Звичайні категорії
     if (!currentCategoryData) {
       return [];
     }
 
-    // Сумісність зі старими значеннями категорій у товарах
-    const categoryAliases: Record<string, string[]> = {
-      dogs: ["dog", "dogs", "собакам", "собаки"],
-      cats: ["cat", "cats", "котам", "коти", "кошкам"],
-      rodents: ["rodent", "rodents", "гризунам", "гризуны"],
-      birds: ["bird", "birds", "птахам", "птицам"],
-      fish: ["fish", "рибам", "рыбам"],
-    };
-
     const allowedCategories = [
-      ...(categoryAliases[category] ?? []),
-      currentCategoryData.title.trim().toLowerCase(),
+      ...(CATEGORY_ALIASES[category] ?? []),
+      currentCategoryData.title.trim().toLocaleLowerCase("uk-UA"),
+      currentCategoryData.slug.trim().toLocaleLowerCase("uk-UA"),
     ];
 
-    let result = products.filter((product) =>
-      allowedCategories.includes((product.category ?? "").trim().toLowerCase())
-    );
+    let result = products.filter((product) => {
+      const productCategory = (product.category ?? "")
+        .trim()
+        .toLocaleLowerCase("uk-UA");
 
-    // Фільтр підкатегорії
+      return allowedCategories.includes(productCategory);
+    });
+
     if (subcategorySlug) {
       const selectedSubcategory = currentCategoryData.subcategories.find(
-        (sub) => sub.slug === subcategorySlug
+        (subcategory) => subcategory.slug === subcategorySlug
       );
 
       if (!selectedSubcategory) {
@@ -242,22 +250,21 @@ export default function CategoryPage({
 
       result = result.filter(
         (product) =>
-          (product.subcategory ?? "").trim().toLowerCase() ===
-          selectedSubcategory.title.trim().toLowerCase()
+          (product.subcategory ?? "").trim().toLocaleLowerCase("uk-UA") ===
+          selectedSubcategory.title.trim().toLocaleLowerCase("uk-UA")
       );
     }
 
     return result;
-  }, [products, currentCategoryData, category, subcategorySlug]);
+  }, [products, category, currentCategoryData, subcategorySlug]);
 
-  // Пошук, фільтри характеристик і ціни
+  // Пошук, фільтрація та ціна.
   const filteredProducts = useMemo(() => {
     let result = [...baseProducts];
 
-    // Пошук за назвою, брендом, категорією та підкатегорією
     if (searchQuery) {
       const searchWords = searchQuery
-        .toLowerCase()
+        .toLocaleLowerCase("uk-UA")
         .split(/\s+/)
         .filter(Boolean);
 
@@ -265,17 +272,20 @@ export default function CategoryPage({
         const searchableText = [
           product.name,
           product.brand,
+          product.sku,
           product.category,
           product.subcategory,
+          product.shortDescription,
+          ...Object.values(product.attributes ?? {}),
         ]
+          .filter(Boolean)
           .join(" ")
-          .toLowerCase();
+          .toLocaleLowerCase("uk-UA");
 
         return searchWords.every((word) => searchableText.includes(word));
       });
     }
 
-    // Фільтри бренду та характеристик
     result = result.filter((product) =>
       Object.entries(selectedFilters).every(([key, values]) => {
         if (values.length === 0) {
@@ -283,18 +293,18 @@ export default function CategoryPage({
         }
 
         const productValue =
-          key === "brand" ? product.brand : product.attributes?.[key] ?? "";
+          key === "brand"
+            ? product.brand ?? ""
+            : product.attributes?.[key] ?? "";
 
         return values.includes(productValue.trim());
       })
     );
 
-    // Мінімальна ціна
     if (minPrice !== null) {
       result = result.filter((product) => product.price >= minPrice);
     }
 
-    // Максимальна ціна
     if (maxPrice !== null) {
       result = result.filter((product) => product.price <= maxPrice);
     }
@@ -302,7 +312,7 @@ export default function CategoryPage({
     return result;
   }, [baseProducts, searchQuery, selectedFilters, minPrice, maxPrice]);
 
-  // Сортування товарів
+  // Сортування.
   const sortedProducts = useMemo(() => {
     const result = [...filteredProducts];
 
@@ -315,8 +325,8 @@ export default function CategoryPage({
     return result;
   }, [filteredProducts, sortOrder]);
 
-  // Очікуємо завантаження категорій
-  if (isCategoriesLoading && !["sale", "popular", "new"].includes(category)) {
+  // Очікуємо категорії лише для звичайних категорій.
+  if (isCategoriesLoading && !isSpecialCategory) {
     return (
       <main className="px-6 py-10">
         <p className="text-muted-foreground">Завантаження категорії...</p>
@@ -324,8 +334,8 @@ export default function CategoryPage({
     );
   }
 
-  // Якщо категорії немає в базі
-  if (!currentCategoryData && !["sale", "popular", "new"].includes(category)) {
+  // Невідома категорія.
+  if (!currentCategoryData && !isSpecialCategory) {
     return (
       <main className="px-6 py-10">
         <h1 className="text-2xl font-bold">Категорію не знайдено</h1>
@@ -333,23 +343,17 @@ export default function CategoryPage({
     );
   }
 
-  // Заголовок сторінки
+  // Заголовок сторінки.
   let pageTitle =
-    category === "sale"
-      ? "Акційні товари"
-      : category === "popular"
-      ? "Популярні товари"
-      : category === "new"
-      ? "Новинки"
-      : currentCategoryData!.title;
+    PAGE_TITLES[category] ?? currentCategoryData?.title ?? "Каталог";
 
   if (subcategorySlug && currentCategoryData) {
-    const sub = currentCategoryData.subcategories.find(
+    const subcategory = currentCategoryData.subcategories.find(
       (item) => item.slug === subcategorySlug
     );
 
-    if (sub) {
-      pageTitle = `${currentCategoryData.title} — ${sub.title}`;
+    if (subcategory) {
+      pageTitle = `${currentCategoryData.title} — ${subcategory.title}`;
     }
   }
 
@@ -357,7 +361,6 @@ export default function CategoryPage({
     ? `Результати пошуку: «${searchQuery}»`
     : pageTitle;
 
-  // Кількість активних фільтрів, включно з ціною
   const activeFiltersCount =
     Object.values(selectedFilters).reduce(
       (total, values) => total + values.length,
@@ -373,17 +376,6 @@ export default function CategoryPage({
           {displayTitle}
         </h1>
 
-        {/* Кількість результатів пошуку */}
-        {searchQuery && !isLoading && !loadError && (
-          <p className="mb-6 text-muted-foreground">
-            Знайдено товарів:{" "}
-            <span className="font-semibold text-foreground">
-              {sortedProducts.length}
-            </span>
-          </p>
-        )}
-
-        {/* Мобільне керування */}
         <div className="mb-6 flex items-center justify-between rounded-2xl border border-border bg-white p-3 shadow-sm lg:hidden">
           <button
             type="button"
@@ -395,6 +387,7 @@ export default function CategoryPage({
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -424,7 +417,6 @@ export default function CategoryPage({
         </div>
 
         <div className="flex items-start gap-10">
-          {/* Бічна панель */}
           <CatalogSidebar
             currentCategory={category}
             isOpenMobile={isMobileFilterOpen}
@@ -438,15 +430,13 @@ export default function CategoryPage({
             onPriceApply={handlePriceApply}
           />
 
-          {/* Список товарів */}
           <section className="min-w-0 flex-1">
-            {/* Сортування на комп'ютері */}
             <div className="mb-6 hidden items-center justify-between rounded-2xl border border-border bg-white p-4 lg:flex">
               <div className="flex items-center gap-3">
                 <p className="text-sm text-muted-foreground">
                   Знайдено товарів:{" "}
                   <span className="font-semibold text-foreground">
-                    {sortedProducts.length}
+                    {isLoading || loadError ? "—" : sortedProducts.length}
                   </span>
                 </p>
 
@@ -479,7 +469,6 @@ export default function CategoryPage({
               </div>
             </div>
 
-            {/* Завантаження, помилка або товари */}
             {isLoading ? (
               <p className="py-10 text-center text-muted-foreground">
                 Завантаження товарів...
@@ -489,37 +478,47 @@ export default function CategoryPage({
                 <h2 className="mb-2 text-xl font-semibold">
                   Не вдалося завантажити товари
                 </h2>
-
                 <p className="text-muted-foreground">
-                  Перевірте зʼєднання та спробуйте оновити сторінку.
+                  Перевірте з’єднання та спробуйте оновити сторінку.
                 </p>
-              </div>
-            ) : sortedProducts.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {sortedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-border bg-white px-6 py-16 text-center">
-                <h2 className="mb-2 text-xl font-semibold">
-                  Товарів не знайдено
-                </h2>
-
-                <p className="text-muted-foreground">
-                  Спробуйте змінити пошуковий запит або вибрати інші фільтри.
+              <>
+                <p className="mb-5 text-sm text-muted-foreground lg:hidden">
+                  Знайдено товарів:{" "}
+                  <span className="font-semibold text-foreground">
+                    {sortedProducts.length}
+                  </span>
                 </p>
 
-                {activeFiltersCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="mt-4 rounded-xl bg-[#B58A32] px-5 py-2.5 font-semibold text-white transition hover:opacity-90"
-                  >
-                    Скинути фільтри
-                  </button>
+                {sortedProducts.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {sortedProducts.map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-border bg-white px-6 py-16 text-center">
+                    <h2 className="mb-2 text-xl font-semibold">
+                      Товарів не знайдено
+                    </h2>
+                    <p className="text-muted-foreground">
+                      Спробуйте змінити пошуковий запит або вибрати інші
+                      фільтри.
+                    </p>
+
+                    {activeFiltersCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="mt-4 rounded-xl bg-[#66852A] px-5 py-2.5 font-semibold text-white transition hover:bg-[#587522]"
+                      >
+                        Скинути фільтри
+                      </button>
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             )}
           </section>
         </div>

@@ -38,6 +38,6 @@ export const categories = [
     title: "Акції",
     description: "Вигідні пропозиції та товари зі спеціальними цінами.",
     href: "/catalog/sale",
-    image: "/categories/sale2.png",
+    image: "/categories/sale7.png",
   },
 ];

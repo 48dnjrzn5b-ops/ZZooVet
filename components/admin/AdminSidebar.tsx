@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -25,6 +26,53 @@ const navigation = [
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+
+    async function loadNewOrdersCount() {
+      const { count, error } = await supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "new");
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error(
+          "Не вдалося завантажити кількість нових замовлень:",
+          error
+        );
+        return;
+      }
+
+      setNewOrdersCount(count ?? 0);
+    }
+
+    void loadNewOrdersCount();
+
+    const channel = supabase
+      .channel("admin-new-orders-count")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+        },
+        () => {
+          void loadNewOrdersCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(channel);
+    };
+  }, []);
 
   async function handleLogout() {
     const supabase = createClient();
@@ -66,7 +114,14 @@ export default function AdminSidebar() {
               }`}
             >
               <Icon size={20} />
-              <span>{item.label}</span>
+
+              <span className="flex-1">{item.label}</span>
+
+              {item.href === "/admin/orders" && newOrdersCount > 0 && (
+                <span className="min-w-6 rounded-full bg-red-600 px-2 py-0.5 text-center text-xs font-bold text-white">
+                  {newOrdersCount > 99 ? "99+" : newOrdersCount}
+                </span>
+              )}
             </Link>
           );
         })}

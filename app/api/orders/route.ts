@@ -1,5 +1,5 @@
-
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -7,6 +7,24 @@ type OrderItemInput = {
   id: string;
   quantity: number;
 };
+
+const optionalText = (value: unknown): string | null =>
+  typeof value === "string" ? value.trim() || null : null;
+
+function escapeHtml(value: unknown): string {
+  const replacements: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  };
+
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (character) => replacements[character] ?? character
+  );
+}
 
 export async function POST(request: Request) {
   try {
@@ -20,7 +38,6 @@ export async function POST(request: Request) {
     }
 
     const data = body as Record<string, unknown>;
-
     const {
       customer_name,
       customer_phone,
@@ -43,11 +60,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (
-      !Array.isArray(items) ||
-      items.length === 0 ||
-      items.length > 100
-    ) {
+    if (!Array.isArray(items) || items.length === 0 || items.length > 100) {
       return NextResponse.json(
         { error: "Кошик порожній або містить забагато товарів." },
         { status: 400 }
@@ -71,10 +84,7 @@ export async function POST(request: Request) {
         );
       }
 
-      quantities.set(
-        item.id,
-        (quantities.get(item.id) ?? 0) + item.quantity
-      );
+      quantities.set(item.id, (quantities.get(item.id) ?? 0) + item.quantity);
     }
 
     for (const quantity of quantities.values()) {
@@ -87,7 +97,6 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-
     const {
       data: { user },
       error: userError,
@@ -102,13 +111,14 @@ export async function POST(request: Request) {
 
     const { data: products, error: productsError } = await admin
       .from("products")
-      .select("id, name, price, image1, stock_quantity, is_active")
+      .select(
+        "id, name, price, image1, stock_quantity, is_active, brand, sku, category, subcategory, short_description, description, advantages, characteristics, composition, feeding_recommendations, attributes"
+      )
       .in("id", productIds)
       .eq("is_active", true);
 
     if (productsError) {
       console.error("Помилка перевірки товарів:", productsError);
-
       return NextResponse.json(
         { error: "Не вдалося перевірити товари." },
         { status: 500 }
@@ -128,6 +138,17 @@ export async function POST(request: Request) {
       image: string | null;
       price: number;
       quantity: number;
+      brand: string | null;
+      sku: string | null;
+      category: string | null;
+      subcategory: string | null;
+      short_description: string | null;
+      description: string | null;
+      advantages: string | null;
+      characteristics: string | null;
+      composition: string | null;
+      feeding_recommendations: string | null;
+      attributes: Record<string, unknown>;
     }[] = [];
 
     let total = 0;
@@ -154,14 +175,19 @@ export async function POST(request: Request) {
 
       if (!Number.isSafeInteger(stock) || stock < quantity) {
         return NextResponse.json(
-          {
-            error: `Недостатньо товару «${product.name}» на складі.`,
-          },
+          { error: `Недостатньо товару «${product.name}» на складі.` },
           { status: 400 }
         );
       }
 
       total += price * quantity;
+
+      const productAttributes =
+        product.attributes &&
+        typeof product.attributes === "object" &&
+        !Array.isArray(product.attributes)
+          ? (product.attributes as unknown as Record<string, unknown>)
+          : {};
 
       orderItems.push({
         id: product.id,
@@ -169,13 +195,21 @@ export async function POST(request: Request) {
         image: product.image1 ?? null,
         price,
         quantity,
+        brand: product.brand ?? null,
+        sku: product.sku ?? null,
+        category: product.category ?? null,
+        subcategory: product.subcategory ?? null,
+        short_description: product.short_description ?? null,
+        description: product.description ?? null,
+        advantages: product.advantages ?? null,
+        characteristics: product.characteristics ?? null,
+        composition: product.composition ?? null,
+        feeding_recommendations: product.feeding_recommendations ?? null,
+        attributes: productAttributes,
       });
     }
 
     total = Math.round((total + Number.EPSILON) * 100) / 100;
-
-    const optionalText = (value: unknown): string | null =>
-      typeof value === "string" ? value.trim() || null : null;
 
     const { data: order, error: orderError } = await admin
       .from("orders")
@@ -196,11 +230,158 @@ export async function POST(request: Request) {
 
     if (orderError) {
       console.error("Помилка створення замовлення:", orderError);
-
       return NextResponse.json(
         { error: "Не вдалося створити замовлення." },
         { status: 500 }
       );
+    }
+
+    // Профіль оновлюється лише після успішного створення замовлення.
+    if (user) {
+      const nameParts = customer_name.trim().split(/\s+/);
+      const firstName = nameParts.shift() ?? "";
+      const lastName = nameParts.join(" ") || null;
+
+      const { error: profileError } = await admin.from("profiles").upsert(
+        {
+          id: user.id,
+          email: optionalText(customer_email) ?? user.email ?? null,
+          first_name: firstName,
+          last_name: lastName,
+          phone: customer_phone.trim(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" }
+      );
+
+      if (profileError) {
+        console.error("Не вдалося оновити профіль:", profileError);
+      }
+    }
+
+    // Email-сповіщення: помилка відправлення не скасовує створене замовлення.
+    const notificationEmail = process.env.ORDER_NOTIFICATION_EMAIL;
+    const resendApiKey = process.env.RESEND_API_KEY;
+
+    if (!notificationEmail || !resendApiKey) {
+      console.error(
+        "Email-сповіщення не налаштоване. Перевір RESEND_API_KEY та ORDER_NOTIFICATION_EMAIL у змінних середовища."
+      );
+    } else {
+      try {
+        const resend = new Resend(resendApiKey);
+
+        const deliveryLabels: Record<string, string> = {
+          branch: "Відділення Нової пошти",
+          postomat: "Поштомат Нової пошти",
+          pickup: "Самовивіз із магазину",
+        };
+
+        const paymentLabels: Record<string, string> = {
+          cod: "Оплата при отриманні",
+          cash: "Готівкою в магазині",
+          monobank: "Monobank",
+        };
+
+        const itemRows = orderItems
+          .map(
+            (item) => `
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #eee;">
+                  ${escapeHtml(item.name)}
+                </td>
+                <td style="padding:10px;text-align:center;border-bottom:1px solid #eee;">
+                  ${item.quantity}
+                </td>
+                <td style="padding:10px;text-align:right;border-bottom:1px solid #eee;">
+                  ${item.price.toLocaleString("uk-UA")} грн
+                </td>
+                <td style="padding:10px;text-align:right;border-bottom:1px solid #eee;">
+                  ${(item.price * item.quantity).toLocaleString("uk-UA")} грн
+                </td>
+              </tr>
+            `
+          )
+          .join("");
+
+        const formattedTotal = Number(order.total).toLocaleString("uk-UA", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+
+        const { error: emailError } = await resend.emails.send({
+          from: "ЗООVet Світ <onboarding@resend.dev>",
+          to: [notificationEmail],
+          subject: `Нове замовлення №${order.order_number} — ЗООVet Світ`,
+          html: `
+            <div style="font-family:Arial,sans-serif;color:#333;max-width:700px;margin:0 auto;">
+              <h1 style="color:#66852A;">🐾 ЗООVet Світ</h1>
+              <h2>Нове замовлення №${escapeHtml(order.order_number)}</h2>
+              <p>На сайті оформлено нове замовлення.</p>
+
+              <h3>Контактні дані покупця</h3>
+              <p>
+                <strong>Ім’я:</strong> ${escapeHtml(customer_name)}<br>
+                <strong>Телефон:</strong> ${escapeHtml(customer_phone)}<br>
+                <strong>Email:</strong> ${escapeHtml(
+                  optionalText(customer_email) ?? user?.email ?? "Не вказано"
+                )}
+              </p>
+
+              <h3>Доставка й оплата</h3>
+              <p>
+                <strong>Спосіб отримання:</strong>
+                ${escapeHtml(
+                  deliveryLabels[String(delivery_method)] ??
+                    delivery_method ??
+                    "Не вказано"
+                )}<br>
+                <strong>Адреса:</strong>
+                ${escapeHtml(delivery_address ?? "Не вказано")}<br>
+                <strong>Оплата:</strong>
+                ${escapeHtml(
+                  paymentLabels[String(payment_method)] ??
+                    payment_method ??
+                    "Не вказано"
+                )}
+              </p>
+
+              <h3>Товари в замовленні</h3>
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr style="background:#f5f5f5;">
+                    <th style="padding:10px;text-align:left;">Товар</th>
+                    <th style="padding:10px;">Кількість</th>
+                    <th style="padding:10px;text-align:right;">Ціна</th>
+                    <th style="padding:10px;text-align:right;">Сума</th>
+                  </tr>
+                </thead>
+                <tbody>${itemRows}</tbody>
+              </table>
+
+              <h2 style="text-align:right;color:#66852A;">
+                Разом: ${formattedTotal} грн
+              </h2>
+              <p style="color:#777;font-size:13px;">
+                Замовлення збережено в адмін-панелі сайту.
+              </p>
+            </div>
+          `,
+        });
+
+        if (emailError) {
+          console.error(
+            "Resend не зміг надіслати сповіщення про замовлення:",
+            emailError
+          );
+        } else {
+          console.info("Email-сповіщення про нове замовлення надіслано.", {
+            orderNumber: order.order_number,
+          });
+        }
+      } catch (emailError) {
+        console.error("Помилка надсилання email-сповіщення:", emailError);
+      }
     }
 
     return NextResponse.json(
@@ -212,7 +393,6 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("Помилка API замовлень:", error);
-
     return NextResponse.json(
       { error: "Помилка під час оформлення замовлення." },
       { status: 500 }
@@ -223,7 +403,6 @@ export async function POST(request: Request) {
 export async function GET() {
   try {
     const supabase = await createClient();
-
     const {
       data: { user },
       error: authError,
@@ -246,7 +425,6 @@ export async function GET() {
 
     if (error) {
       console.error("Помилка отримання замовлень:", error);
-
       return NextResponse.json(
         { error: "Не вдалося завантажити замовлення." },
         { status: 500 }
@@ -263,7 +441,6 @@ export async function GET() {
     );
   } catch (error) {
     console.error("Помилка API замовлень:", error);
-
     return NextResponse.json(
       { error: "Внутрішня помилка сервера." },
       { status: 500 }
