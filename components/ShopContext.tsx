@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useSyncExternalStore } from "react";
 
 export type Product = {
   id: string | number;
@@ -16,15 +16,12 @@ export type Product = {
 type ShopContextType = {
   cart: Product[];
   favorites: Product[];
-
   addToCart: (product: Product) => void;
   removeFromCart: (id: string | number) => void;
   increaseQuantity: (id: string | number) => void;
   decreaseQuantity: (id: string | number) => void;
-
   toggleCartSelection: (id: string | number) => void;
   removePurchasedFromCart: (ids: (string | number)[]) => void;
-
   toggleFavorite: (product: Product) => void;
   removeFromFavorites: (id: string | number) => void;
   isInFavorites: (id: string | number) => boolean;
@@ -32,107 +29,135 @@ type ShopContextType = {
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
+const CART_KEY = "300vet_cart";
+const FAVORITES_KEY = "300vet_favorites";
+
+let cartSnapshot: Product[] = [];
+let favoritesSnapshot: Product[] = [];
+
+const listeners = new Set<() => void>();
+
+function readStorage(key: string): Product[] {
+  try {
+    const saved = localStorage.getItem(key);
+    if (!saved) return [];
+
+    const parsed: unknown = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function notify() {
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getCartSnapshot() {
+  return cartSnapshot;
+}
+
+function getFavoritesSnapshot() {
+  return favoritesSnapshot;
+}
+
+const EMPTY_PRODUCTS: Product[] = [];
+
+function getServerSnapshot(): Product[] {
+  return EMPTY_PRODUCTS;
+}
+
+function updateCart(updater: (previous: Product[]) => Product[]) {
+  cartSnapshot = updater(cartSnapshot);
+  localStorage.setItem(CART_KEY, JSON.stringify(cartSnapshot));
+  notify();
+}
+
+function updateFavorites(updater: (previous: Product[]) => Product[]) {
+  favoritesSnapshot = updater(favoritesSnapshot);
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favoritesSnapshot));
+  notify();
+}
+
+function initializeStorage() {
+  if (typeof window === "undefined") return;
+
+  cartSnapshot = readStorage(CART_KEY).map((product) => ({
+    ...product,
+    quantity: Math.max(1, product.quantity ?? 1),
+    selectedForCheckout: product.selectedForCheckout ?? true,
+  }));
+
+  favoritesSnapshot = readStorage(FAVORITES_KEY);
+}
+
+if (typeof window !== "undefined") {
+  initializeStorage();
+}
+
 export function ShopProvider({ children }: { children: React.ReactNode }) {
-  const [cart, setCart] = useState<Product[]>(() => {
-    if (typeof window === "undefined") return [];
+  const cart = useSyncExternalStore(
+    subscribe,
+    getCartSnapshot,
+    getServerSnapshot
+  );
 
-    try {
-      const saved = localStorage.getItem("300vet_cart");
+  const favorites = useSyncExternalStore(
+    subscribe,
+    getFavoritesSnapshot,
+    getServerSnapshot
+  );
 
-      if (!saved) return [];
-
-      const products: Product[] = JSON.parse(saved);
-
-      return products.map((product) => ({
-        ...product,
-        quantity: Math.max(1, product.quantity ?? 1),
-        selectedForCheckout: product.selectedForCheckout ?? true,
-      }));
-    } catch {
-      return [];
-    }
-  });
-
-  const [favorites, setFavorites] = useState<Product[]>(() => {
-    if (typeof window === "undefined") return [];
-
-    try {
-      const saved = localStorage.getItem("300vet_favorites");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem("300vet_cart", JSON.stringify(cart));
-  }, [cart]);
-
-  useEffect(() => {
-    localStorage.setItem("300vet_favorites", JSON.stringify(favorites));
-  }, [favorites]);
-
-  // Додати товар у кошик
   const addToCart = (product: Product) => {
-    setCart((prev) => {
+    updateCart((prev) => {
       const exists = prev.some((item) => item.id === product.id);
 
       if (exists) {
         return prev.map((item) =>
           item.id === product.id
-            ? {
-                ...item,
-                quantity: (item.quantity ?? 1) + 1,
-              }
+            ? { ...item, quantity: (item.quantity ?? 1) + 1 }
             : item
         );
       }
 
-      return [
-        ...prev,
-        {
-          ...product,
-          quantity: 1,
-          selectedForCheckout: true,
-        },
-      ];
+      return [...prev, { ...product, quantity: 1, selectedForCheckout: true }];
     });
   };
 
-  // Видалити товар лише за явним запитом
   const removeFromCart = (id: string | number) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+    updateCart((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // Збільшити кількість
   const increaseQuantity = (id: string | number) => {
-    setCart((prev) =>
+    updateCart((prev) =>
       prev.map((item) =>
         item.id === id ? { ...item, quantity: (item.quantity ?? 1) + 1 } : item
       )
     );
   };
 
-  // Зменшити кількість, але не нижче 1
-
   const decreaseQuantity = (id: string | number) => {
-    setCart((prev) =>
+    updateCart((prev) =>
       prev
         .map((item) =>
           item.id === id
-            ? {
-                ...item,
-                quantity: (item.quantity ?? 1) - 1,
-              }
+            ? { ...item, quantity: (item.quantity ?? 1) - 1 }
             : item
         )
         .filter((item) => (item.quantity ?? 1) > 0)
     );
   };
 
-  // Позначити або зняти позначку для покупки
   const toggleCartSelection = (id: string | number) => {
-    setCart((prev) =>
+    updateCart((prev) =>
       prev.map((item) =>
         item.id === id
           ? {
@@ -144,26 +169,22 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  // Викликати лише після успішного оформлення замовлення
   const removePurchasedFromCart = (ids: (string | number)[]) => {
-    setCart((prev) => prev.filter((item) => !ids.includes(item.id)));
+    updateCart((prev) => prev.filter((item) => !ids.includes(item.id)));
   };
 
-  // Додати або прибрати товар з обраного
   const toggleFavorite = (product: Product) => {
-    setFavorites((prev) => {
+    updateFavorites((prev) => {
       const exists = prev.some((item) => item.id === product.id);
 
-      if (exists) {
-        return prev.filter((item) => item.id !== product.id);
-      }
-
-      return [...prev, product];
+      return exists
+        ? prev.filter((item) => item.id !== product.id)
+        : [...prev, product];
     });
   };
 
   const removeFromFavorites = (id: string | number) => {
-    setFavorites((prev) => prev.filter((item) => item.id !== id));
+    updateFavorites((prev) => prev.filter((item) => item.id !== id));
   };
 
   const isInFavorites = (id: string | number) => {

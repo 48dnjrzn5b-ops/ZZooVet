@@ -94,6 +94,8 @@ export default function ProductImageUpload({
           <Image
             src={value}
             alt={label}
+            width={600}
+            height={400}
             className="h-40 w-full rounded-lg bg-gray-50 object-contain"
           />
         </div>

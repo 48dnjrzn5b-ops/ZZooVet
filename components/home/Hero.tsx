@@ -1,307 +1,45 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Percent, ShieldCheck, Tag, Truck, Heart } from "lucide-react";
-
-const advantages = [
-  {
-    icon: ShieldCheck,
-    title: "Перевірена якість",
-  },
-  {
-    icon: Tag,
-    title: "Доступні ціни",
-  },
-  {
-    icon: Truck,
-    title: "Швидка доставка",
-  },
-  {
-    icon: Heart,
-    title: "Любов до тварин",
-  },
-];
 
 export default function Hero() {
   return (
-    <section className="w-full">
-      <div
-        className="
-          relative
-          mx-auto
-          w-full
-          overflow-hidden
-          rounded-none
-          lg:max-w-[1900px]
-        "
-      >
-        {/* =========================
-            ФОНОВЕ ЗОБРАЖЕННЯ
-        ========================== */}
-        <div
-          className="
-            relative
-            h-[540px]
-            w-full
-            sm:h-[520px]
-            lg:h-[650px]
-          "
-        >
-          {/* =========================
-              ДЕСКТОП
-          ========================== */}
-          <Image
-            src="/hero-bg4.jpg"
-            alt=""
-            fill
-            priority
-            sizes="(min-width: 1024px) 100vw, 0px"
-            className="
-              hidden
-              object-cover
-              object-[20%_0%]
-              lg:block
-            "
-          />
+    <section className="px-3 sm:px-5">
+      <div className="relative mx-auto h-[400px] w-full max-w-[1900px] overflow-hidden rounded-[24px] sm:h-[480px] sm:rounded-[28px] lg:h-[650px] xl:h-[720px]">
+        <Image
+          src="/hero-bg4.jpg"
+          alt="Щасливі домашні улюбленці"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[65%_center] sm:object-center"
+        />
 
-          {/* =========================
-              МОБІЛКА
-          ========================== */}
-          <Image
-            src="/hero-bg4.jpg"
-            alt=""
-            fill
-            priority
-            sizes="(max-width: 1023px) 100vw"
-            className="
-              block
-              object-cover
-              object-[80%_100%]
-              lg:hidden
-            "
-          />
-        </div>
+        {/* Градієнт тільки на мобільних */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#E5EDE0]/95 via-[#E5EDE0]/65 to-transparent lg:hidden" />
 
-        {/* =========================
-            КОНТЕНТ
-        ========================== */}
-        <div
-          className="
-            absolute
-            inset-0
-          "
-        >
-          <div
-            className="
-              mx-auto
-              flex
-              h-full
-              w-full
-              max-w-7xl
-              flex-col
-              justify-between
-              px-5
-              py-6
+        <div className="relative z-10 flex h-[400px] items-center px-6 py-8 sm:h-[480px] sm:px-10 lg:h-[650px] lg:px-16 xl:h-[720px]">
+          <div className="max-w-[520px]">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-green-800">
+              ZooVet — турбота поруч
+            </p>
 
-              sm:px-6
-              sm:py-10
+            <h1 className="text-3xl font-extrabold leading-tight text-[#243B2A] sm:text-4xl lg:text-5xl">
+              Усе найкраще
+              <br />
+              для ваших улюбленців
+            </h1>
 
-              lg:flex-row
-              lg:items-center
-              lg:px-10
-              lg:py-0
-            "
-          >
-            {/* =========================
-                КОЛОНКА З КОНТЕНТОМ (на десктопі єдина, на мобілці розділена flex-col/justify-between)
-            ========================== */}
-            <div
-              className="
-                flex
-                h-full
-                w-full
-                flex-col
-                justify-between
+            <p className="mt-5 max-w-[420px] text-sm leading-relaxed text-[#435747] sm:text-base">
+              Якісні товари, корисне харчування та щоденна турбота про тих, кого
+              ми любимо.
+            </p>
 
-                sm:w-[70%]
-
-                lg:h-auto
-                lg:w-[55%]
-                lg:justify-start
-                lg:pl-0
-              "
+            <Link
+              href="/catalog"
+              className="mt-7 inline-flex rounded-full bg-[#66852A] px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-[#244A2D]"
             >
-              {/* ЗАГОЛОВОК (ЗВЕРХУ) */}
-              <div className="w-full text-center sm:text-left">
-                <h1
-                  className="
-                    mx-auto
-                    max-w-[700px]
-                    font-heading
-                    text-[1.85rem]
-                    font-bold
-                    leading-[1]
-                    text-[#202828]
-
-                    sm:mx-0
-                    sm:text-[clamp(2rem,4vw,3rem)]
-
-                    lg:text-[clamp(2.2rem,3.5vw,3rem)]
-                  "
-                >
-                  Усе, що потрібно
-                  <span className="block text-[#F77601] mt-4">
-                    для вашого улюбленця
-                  </span>
-                </h1>
-              </div>
-
-              {/* ОПИС І КНОПКИ (ЗНИЗУ НА МОБІЛЦІ, ПІД ЗАГОЛОВКОМ НА ДЕСКОПІ) */}
-              <div className="pb-1 lg:pb-0">
-                <p
-                  className="
-                    max-w-[520px]
-                    text-[0.95rem]
-                    leading-[1.4]
-                    text-[#303535]
-
-                    sm:text-[clamp(1rem,1.5vw,1.15rem)]
-
-                    lg:mt-4
-                  "
-                >
-                  Якісні товари для здоров’я, догляду
-                  <br className="hidden sm:inline" />
-                  та щасливого життя ваших тварин
-                </p>
-
-                {/* КНОПКИ */}
-                <div
-                  className="
-                    mt-4
-                    flex
-                    w-full
-                    flex-col
-                    items-stretch
-                    gap-2.5
-
-                    sm:flex-row
-                    sm:items-center
-                    sm:gap-3
-
-                    lg:mt-10
-                  "
-                >
-                  {/* ПЕРЕЙТИ В КАТАЛОГ */}
-                  <Link
-                    href="/catalog"
-                    className="
-                      flex
-                      h-11
-                      w-full
-                      items-center
-                      justify-center
-                      rounded-xl
-                      bg-[#66852A]
-                      px-6
-                      text-base
-                      font-medium
-                      text-white
-                      transition-colors
-                      hover:bg-[#F77601]
-
-                      sm:h-12
-                      sm:w-auto
-                      sm:max-w-[300px]
-                    "
-                  >
-                    Перейти в каталог
-                  </Link>
-
-                  {/* АКЦІЇ ТА ЗНИЖКИ */}
-                  <Link
-                    href="/catalog/sale"
-                    className="
-                      flex
-                      h-11
-                      w-full
-                      items-center
-                      justify-center
-                      gap-1.5
-                      rounded-xl
-                      border-2
-                      border-[#66852A]
-                      bg-white/85
-                      px-5
-                      text-base
-                      font-medium
-                      text-[#66852A]
-                      backdrop-blur-sm
-                      transition-colors
-                      hover:bg-[#66852A]/10
-
-                      sm:h-12
-                      sm:w-auto
-                      sm:max-w-[300px]
-                    "
-                  >
-                    <Percent className="h-[1em] w-[1em]" strokeWidth={2.5} />
-                    Акції та знижки
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* ПЕРЕВАГИ (Тільки десктоп / планшет під основною частиною) */}
-            <div
-              className="
-                mt-6
-                hidden
-                flex-wrap
-                items-center
-                gap-x-8
-                gap-y-4
-
-                sm:flex
-
-                lg:absolute
-                lg:bottom-10
-              "
-            >
-              {advantages.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <div
-                    key={item.title}
-                    className="
-                      flex
-                      flex-col
-                      items-center
-                      text-center
-                    "
-                  >
-                    <Icon
-                      className="h-10 w-10 text-[#66852A]"
-                      strokeWidth={1.4}
-                    />
-
-                    <span
-                      className="
-                        mt-2
-                        max-w-[100px]
-                        text-xs
-                        font-medium
-                        leading-tight
-                        text-[#202828]
-                        sm:text-sm
-                      "
-                    >
-                      {item.title}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+              Перейти до каталогу
+            </Link>
           </div>
         </div>
       </div>

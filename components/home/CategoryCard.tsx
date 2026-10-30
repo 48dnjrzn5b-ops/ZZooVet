@@ -14,26 +14,27 @@ export default function CategoryCard({
 }: CategoryCardProps) {
   return (
     <Link href={href} className="group block w-full">
-      {/* ================================================= */}
       {/* DESKTOP VERSION */}
-      {/* ================================================= */}
-
       <div
         className="
           hidden
           flex-col
           overflow-hidden
           rounded-2xl
-          bg-[#F1E7D8]
+border border-[#D1D5DB]
+          bg-white
+          transition-all duration-300
+          group-hover:border-2
           lg:flex
         "
       >
-        {/* КАРТИНКА НА ВСЮ КАРТКУ (без відступів, розтягується на всю ширину і висоту) */}
+        {/* КАРТИНКА */}
         <div className="relative h-[235px] w-full overflow-hidden">
           <Image
             src={image}
             alt={title}
             fill
+            sizes="(min-width: 1024px) 16vw, 100vw"
             className="
               object-cover
               object-center
@@ -44,7 +45,7 @@ export default function CategoryCard({
           />
         </div>
 
-        {/* ПІДПИС ОКРЕМО ЯК КНОПКА ЗНИЗУ */}
+        {/* ПІДПИС */}
         <div
           className="
             flex
@@ -52,10 +53,11 @@ export default function CategoryCard({
             w-full
             items-center
             justify-center
-            bg-[#E6D5BE]
+border-t border-[#D1D5DB]
+            bg-white
             text-center
             transition-colors
-            group-hover:bg-[#D8C4AB]
+            group-hover:bg-gray-100
           "
         >
           <h3
@@ -63,7 +65,7 @@ export default function CategoryCard({
               text-[15px]
               font-semibold
               leading-tight
-              text-[#202828]
+              text-black
             "
           >
             {title}
@@ -71,10 +73,7 @@ export default function CategoryCard({
         </div>
       </div>
 
-      {/* ================================================= */}
-      {/* MOBILE VERSION */}
-      {/* ================================================= */}
-
+      {/* MOBILE VERSION — БЕЗ ЗМІН */}
       <div
         className="
           flex
