@@ -15,7 +15,6 @@ const advantages = [
   },
 
   {
-    // Іконка повернення
     icon: RotateCcw,
 
     title: "Повернення товару",
@@ -24,7 +23,6 @@ const advantages = [
   },
 
   {
-    // Іконка підтримки
     icon: Headphones,
 
     title: "Підтримка 24/7",
@@ -51,7 +49,6 @@ export default function Advantages() {
         py-4
         sm:px-2
         lg:px-14
-        sm:hidden
       "
     >
       {/* Контейнер самого блоку */}

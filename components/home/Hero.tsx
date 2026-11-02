@@ -4,21 +4,34 @@ import Link from "next/link";
 export default function Hero() {
   return (
     <section className="px-3 sm:px-5">
-      <div className="relative mx-auto h-[400px] w-full max-w-[1900px] overflow-hidden rounded-[24px] sm:h-[480px] sm:rounded-[28px] lg:h-[650px] xl:h-[720px]">
+      <div className="relative mx-auto h-[400px] w-full max-w-[1900px] overflow-hidden rounded-[24px] bg-[#E5F1EC] sm:h-[480px] sm:rounded-[28px] lg:h-[650px] xl:h-[720px]">
+        {/* Фото для комп'ютера */}
         <Image
-          src="/hero-bg4.jpg"
+          src="/hero-bg0.jpg"
           alt="Щасливі домашні улюбленці"
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[65%_center] sm:object-center"
+          className="hidden object-cover object-[60%_bottom] sm:block sm:scale-110"
         />
 
+        {/* Фото для мобільного */}
+        <div className="absolute inset-0 overflow-hidden sm:hidden">
+          <Image
+            src="/hero-bg0.jpg"
+            alt="Щасливі домашні улюбленці"
+            fill
+            priority
+            sizes="100vw"
+            className="scale-110 object-contain object-left-bottom"
+            style={{ transform: "translate(20px, -22px) scale(1.2)" }}
+          />
+        </div>
+
         {/* Градієнт тільки на мобільних */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#E5EDE0]/95 via-[#E5EDE0]/65 to-transparent lg:hidden" />
 
         <div className="relative z-10 flex h-[400px] items-center px-6 py-8 sm:h-[480px] sm:px-10 lg:h-[650px] lg:px-16 xl:h-[720px]">
-          <div className="max-w-[520px]">
+          <div className="max-w-[520px] -translate-y-4 sm:translate-y-0">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-green-800">
               ZooVet — турбота поруч
             </p>
