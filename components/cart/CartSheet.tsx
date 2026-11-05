@@ -89,8 +89,6 @@ export default function CartSheet({ open, onOpenChange }: CartSheetProps) {
                       </div>
                     )}
                   </Link>
-
-                  {/* Інформація */}
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/catalog/product/${product.id}`}
@@ -99,11 +97,7 @@ export default function CartSheet({ open, onOpenChange }: CartSheetProps) {
                     >
                       {product.title}
                     </Link>
-
-                    {/* Ціна */}
                     <p className="mt-1 text-sm font-bold">{productTotal} грн</p>
-
-                    {/* Кількість */}
                     <div className="mt-2 flex items-center gap-2">
                       <button
                         type="button"
@@ -128,8 +122,6 @@ export default function CartSheet({ open, onOpenChange }: CartSheetProps) {
                       </button>
                     </div>
                   </div>
-
-                  {/* Видалити */}
                   <button
                     type="button"
                     onClick={() => removeFromCart(product.id)}
@@ -143,8 +135,6 @@ export default function CartSheet({ open, onOpenChange }: CartSheetProps) {
             })}
           </div>
         )}
-
-        {/* Нижня частина — завжди видима */}
         <div className="border-t pt-4">
           <div className="mb-4 flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Разом</span>
@@ -161,15 +151,7 @@ export default function CartSheet({ open, onOpenChange }: CartSheetProps) {
               onOpenChange(false);
               setIsCheckoutOpen(true);
             }}
-            className={`
-      w-full
-      rounded-xl
-      px-7
-      py-3
-      text-sm
-      font-semibold
-      text-white
-      transition
+            className={`w-full rounded-xl px-7 py-3 text-sm font-semibold text-white transition
       ${
         total <= 0
           ? "cursor-not-allowed bg-gray-300"

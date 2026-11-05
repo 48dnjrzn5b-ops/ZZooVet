@@ -31,11 +31,8 @@ export default function ProductActions({ product }: ProductActionsProps) {
   };
 
   const handleAddToCart = () => {
-    // Додаємо товар у кошик
     addToCart(product);
 
-    // Якщо вибрано більше 1 штуки —
-    // збільшуємо кількість у кошику
     for (let i = 1; i < quantity; i++) {
       increaseQuantity(product.id);
     }
@@ -47,9 +44,7 @@ export default function ProductActions({ product }: ProductActionsProps) {
 
   return (
     <div className="mt-6">
-      {/* КІЛЬКІСТЬ + КОШИК + ОБРАНЕ */}
       <div className="flex flex-col gap-3 sm:flex-row">
-        {/* Кількість */}
         <div className="flex h-14 items-center justify-between rounded-xl border border-gray-200 px-4 sm:w-36">
           <button
             type="button"
@@ -73,8 +68,6 @@ export default function ProductActions({ product }: ProductActionsProps) {
             <Plus size={18} />
           </button>
         </div>
-
-        {/* Додати в кошик */}
         <button
           type="button"
           onClick={handleAddToCart}
@@ -84,8 +77,6 @@ export default function ProductActions({ product }: ProductActionsProps) {
 
           <span>Додати в кошик</span>
         </button>
-
-        {/* Обране */}
         <button
           type="button"
           onClick={handleFavorite}
@@ -99,8 +90,6 @@ export default function ProductActions({ product }: ProductActionsProps) {
           <Heart size={21} fill={favorite ? "currentColor" : "none"} />
         </button>
       </div>
-
-      {/* Повідомлення */}
       <div className="mt-3 text-sm text-gray-500">
         {favorite
           ? "Товар додано до обраного"

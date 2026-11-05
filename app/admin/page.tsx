@@ -178,8 +178,6 @@ export default function AdminPage() {
           Керуйте товарами, замовленнями та користувачами магазину.{" "}
         </p>{" "}
       </div>
-      ```
-      {/* ОСНОВНІ КАРТКИ */}
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <Link href="/admin/products" className={cardClass}>
           <div className="mb-4 flex items-center justify-between">

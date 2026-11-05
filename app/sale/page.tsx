@@ -58,7 +58,6 @@ export default function SalePage() {
        lg:px-10
      "
       >
-        {/* Заголовок */}{" "}
         <div className="mb-8">
           {" "}
           <p className="text-sm font-medium uppercase tracking-wide text-[#66852A]">
